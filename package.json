@@ -1,0 +1,39 @@
+{
+  "name": "cordova-plugin-ui-sounds",
+  "author": "talisman.games",
+  "version": "1.0.0",
+  "description": "Cordova Plugin for simple audio feedback on mobile devices.",
+  "cordova": {
+    "id": "cordova-plugin-ui-sounds",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  },
+  "homepage": "https://github.com/talisman-games/cordova-plugin-ui-sounds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/talisman-games/cordova-plugin-ui-sounds.git"
+  },
+  "bugs": {
+    "url": "https://github.com/talisman-games/cordova-plugin-ui-sounds/issues/"
+  },
+  "keywords": [
+    "cordova",
+    "ecosystem:cordova",
+    "ui",
+    "system",
+    "sound",
+    "audio",
+    "fx",
+    "simple",
+    "feedback",
+    "mix",
+    "tap",
+    "click"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

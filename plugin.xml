@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="cordova-plugin-ui-sounds"
+    version="1.0.0">
+
+  <name>Cordova UI Sounds Plugin</name>
+  <author>talisman.games</author>
+	<description>Cordova Plugin for simple audio feedback on mobile devices.</description>
+
+	<license>MIT</license>
+	<keywords>ui,system,sound,audio,fx,simple,feedback,mix,tap,click</keywords>
+  <repo>https://github.com/talisman-games/cordova-plugin-ui-sounds/</repo>
+  <issue>https://github.com/talisman-games/cordova-plugin-ui-sounds/issues/</issue>
+
+	<engines>
+    <engine name="cordova" version=">=7.0" />
+	</engines>
+
+  <platform name="ios">
+    <js-module src="www/UISounds.js" name="Plugin">
+      <clobbers target="plugins.UISounds"/> 
+    </js-module>
+    <config-file target="config.xml" parent="/*">
+      <feature name="UISounds">
+        <param name="ios-package" value="UISounds"/>
+      </feature>
+    </config-file>
+    <framework src="Foundation.framework"/>
+    <framework src="AVFoundation.framework"/>
+    <framework src="AudioToolbox.framework"/>
+    <header-file src="src/ios/UISounds.h"/>
+    <source-file src="src/ios/UISounds.m"/>
+  </platform>
+
+  <platform name="android">
+    <js-module src="www/UISounds.js" name="Plugin">
+      <clobbers target="plugins.UISounds"/>
+    </js-module>
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="UISounds">
+        <param name="android-package" value="games.talisman.cordova.plugin.uisounds.UISounds"/>
+      </feature>
+    </config-file>
+    <source-file src="src/android/UISounds.java" target-dir="src/games/talisman/cordova/plugin/uisounds"/>
+  </platform>
+</plugin>
