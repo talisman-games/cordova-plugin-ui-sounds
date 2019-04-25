@@ -2,113 +2,150 @@
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
 
+static const SystemSoundID INVALID_SOUND_ID = 0;
+
 static NSString *resultToString(OSStatus result) {
   switch (result) {
-    case kAudioServicesNoError: return @"No Error";
-    case kAudioServicesUnsupportedPropertyError: return @"Unsupported Property";
-    case kAudioServicesBadPropertySizeError: return @"Bad Property Size";
-    case kAudioServicesBadSpecifierSizeError: return @"Bad Specifier Size";
-    case kAudioServicesSystemSoundUnspecifiedError: return @"System Sound Unspecified";
-    case kAudioServicesSystemSoundClientTimedOutError: return @"System Sound Client Timed Out";
-    default: return @"Unhandled Error Code";
+    case kAudioServicesNoError:
+      return @"No Error";
+    case kAudioServicesUnsupportedPropertyError:
+      return @"Unsupported Property";
+    case kAudioServicesBadPropertySizeError:
+      return @"Bad Property Size";
+    case kAudioServicesBadSpecifierSizeError:
+      return @"Bad Specifier Size";
+    case kAudioServicesSystemSoundUnspecifiedError:
+      return @"System Sound Unspecified";
+    case kAudioServicesSystemSoundClientTimedOutError:
+      return @"System Sound Client Timed Out";
+    default:
+      return @"Unhandled Error Code";
   }
 }
 
 @implementation UISounds
 
-- (void) pluginInitialize{
-  NSLog(@"UISounds pluginInitialize");
+- (void)pluginInitialize {
+  NSLog(@"UISounds native plugin initialized");
   systemSoundIds = [NSMutableDictionary dictionary];
 }
 
-- (void) preloadSound:(CDVInvokedUrlCommand *)command {
+- (void)preloadSound:(CDVInvokedUrlCommand *)command {
   NSString *assetPath = [command.arguments objectAtIndex:0];
-  [self createSystemSoundFor:assetPath];
+  [self.commandDelegate runInBackground:^{
+    CDVPluginResult *result = [self createSystemSoundFor:assetPath];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+  }];
 }
 
-- (void) playSound:(CDVInvokedUrlCommand *)command {
+- (void)playSound:(CDVInvokedUrlCommand *)command {
   NSString *assetPath = [command.arguments objectAtIndex:0];
-  [self playSystemSoundFor:assetPath];
+  [self.commandDelegate runInBackground:^{
+    CDVPluginResult *result = [self playSystemSoundFor:assetPath];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+  }];
 }
 
-- (void) unloadSound:(CDVInvokedUrlCommand *)command {
+- (void)unloadSound:(CDVInvokedUrlCommand *)command {
   NSString *assetPath = [command.arguments objectAtIndex:0];
-  [self disposeSystemSoundFor:assetPath];
+  [self.commandDelegate runInBackground:^{
+    CDVPluginResult *result = [self disposeSystemSoundFor:assetPath];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+  }];
 }
 
-- (void) addSystemSoundIdFor:(NSString *)assetPath withSoundId:(SystemSoundID)soundId {
+- (void)addSystemSoundIdFor:(NSString *)assetPath withSoundId:(SystemSoundID)soundId {
   systemSoundIds[assetPath] = [NSNumber numberWithInt:soundId];
 }
 
-- (SystemSoundID) getSystemSoundIdFor:(NSString *)assetPath {
-    NSNumber *soundId = systemSoundIds[assetPath];
-  if (soundId == nil) {
-    return 0;
-  }
-  return [soundId intValue];
+- (SystemSoundID)getSystemSoundIdFor:(NSString *)assetPath {
+  NSNumber *soundId = systemSoundIds[assetPath];
+  return soundId == nil ? INVALID_SOUND_ID : [soundId intValue];
 }
 
-- (SystemSoundID) createSystemSoundFor:(NSString *)assetPath {
+- (void)removeSystemSoundIdFor:(NSString *)assetPath {
+  [systemSoundIds removeObjectForKey:assetPath];
+}
+
+- (CDVPluginResult *)createSystemSoundFor:(NSString *)assetPath {
   SystemSoundID soundId = [self getSystemSoundIdFor:assetPath];
-  if (soundId != 0) {
-    NSLog(@"UISounds - createSystemSoundFor:%@ sound already exists!", assetPath);
-  } else {
-    NSURL *assetUrl = [self findUrlFor:assetPath];
-    if (assetUrl) {
-      CFURLRef assetUrlRef = (CFURLRef)CFBridgingRetain(assetUrl);
-      OSStatus result = AudioServicesCreateSystemSoundID(assetUrlRef, &soundId);
-      if (result == kAudioServicesNoError) {
-        [self addSystemSoundIdFor:assetPath withSoundId:soundId];
-        NSLog(@"UISounds - createSystemSoundFor:%@ - done", assetPath);
-      } else {
-        NSLog(@"UISounds - createSystemSoundFor:%@ - Error: %@", assetPath, resultToString(result));
-      }
+  if (soundId != INVALID_SOUND_ID) {
+    NSString *message = [NSString stringWithFormat:@"UISounds: '%@' is already loaded", assetPath];
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
+  }
+
+  NSURL *assetUrl = [self findUrlFor:assetPath];
+  if (assetUrl == nil) {
+    NSString *message = [NSString
+        stringWithFormat:@"UISounds: File '%@' not found in the app's www folder!", assetPath];
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
+  }
+
+  CFURLRef assetUrlRef = (CFURLRef)CFBridgingRetain(assetUrl);
+  OSStatus result = AudioServicesCreateSystemSoundID(assetUrlRef, &soundId);
+  if (result != kAudioServicesNoError) {
+    NSString *message =
+        [NSString stringWithFormat:@"UISounds: AudioServices error when loading '%@': %@",
+                                   assetPath, resultToString(result)];
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
+  }
+
+  [self addSystemSoundIdFor:assetPath withSoundId:soundId];
+  NSString *message = [NSString stringWithFormat:@"UISounds: '%@' loaded", assetPath];
+  return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
+}
+
+- (CDVPluginResult *)playSystemSoundFor:(NSString *)assetPath {
+  SystemSoundID soundId = [self getSystemSoundIdFor:assetPath];
+  if (soundId == INVALID_SOUND_ID) {
+    CDVPluginResult *result = [self createSystemSoundFor:assetPath];
+    if ([result.status intValue] != CDVCommandStatus_OK) {
+      return result;  // could not load that asset
     }
-  }
-  return soundId;
-}
 
-- (void) playSystemSoundFor:(NSString *)assetPath {
-  SystemSoundID soundId = [self getSystemSoundIdFor:assetPath];
-  if (soundId == 0) {
-    NSLog(@"UISounds - playSystemSoundFor:%@ - Sound not found. Be sure to call createSystemSound first!",
-      assetPath);
-  } else {
+    soundId = [self getSystemSoundIdFor:assetPath];
     AudioServicesPlaySystemSound(soundId);
-    NSLog(@"UISounds - playSystemSoundFor:%@ - done", assetPath);
+    NSString *message =
+        [NSString stringWithFormat:@"UISounds: '%@' loaded and playback started. Call "
+                                   @"preloadSound() first for lower-latency playback.",
+                                   assetPath];
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
   }
+
+  AudioServicesPlaySystemSound(soundId);
+  NSString *message = [NSString stringWithFormat:@"UISounds: '%@' playback started", assetPath];
+  return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
 }
 
-- (void) disposeSystemSoundFor:(NSString *)assetPath {
-   SystemSoundID soundId = [self getSystemSoundIdFor:assetPath];
-  if (soundId == 0) {
-    NSLog(@"UISounds - playSystemSoundFor:%@ - Sound not found. Be sure to call createSystemSound first!",
-      assetPath);
-  } else {
-    OSStatus result = AudioServicesDisposeSystemSoundID(soundId);
-    if (result == kAudioServicesNoError) {
-      NSLog(@"UISounds - disposeSystemSoundFor:%@ - done", assetPath);
-    } else {
-      NSLog(@"UISounds - disposeSystemSoundFor:%@ - Error: %@", assetPath, resultToString(result));
-    }
+- (CDVPluginResult *)disposeSystemSoundFor:(NSString *)assetPath {
+  SystemSoundID soundId = [self getSystemSoundIdFor:assetPath];
+  if (soundId == INVALID_SOUND_ID) {
+    NSString *message =
+        [NSString stringWithFormat:@"UISounds: '%@' is not loaded, cannot be unloaded", assetPath];
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
   }
+
+  OSStatus result = AudioServicesDisposeSystemSoundID(soundId);
+  if (result != kAudioServicesNoError) {
+    NSString *message =
+        [NSString stringWithFormat:@"UISounds: AudioServices error while unloading '%@': %@",
+                                   assetPath, resultToString(result)];
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
+  }
+
+  [self removeSystemSoundIdFor:assetPath];
+
+  NSString *message = [NSString stringWithFormat:@"UISounds: '%@' unloaded", assetPath];
+  return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
 }
 
-- (NSURL *) findUrlFor:(NSString *)assetPath {
-  NSURL *pathUrl = nil;
-  if ([[NSFileManager defaultManager] fileExistsAtPath:assetPath]) {
-    pathUrl = [NSURL fileURLWithPath:assetPath];
-  } else {
-    NSString* wwwPath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"www"];
-    NSString* pathFromWWW = [NSString stringWithFormat:@"%@/%@", wwwPath, assetPath];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:pathFromWWW]) {
-      pathUrl = [NSURL fileURLWithPath:pathFromWWW];
-    } else {
-      NSLog(@"UISounds - findUrlFor:%@ - unable to find file at specified location or '%@'!",
-        assetPath, pathFromWWW);
-    }
+- (NSURL *)findUrlFor:(NSString *)assetPath {
+  NSString *wwwPath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"www"];
+  NSString *pathFromWWW = [NSString stringWithFormat:@"%@/%@", wwwPath, assetPath];
+  if ([[NSFileManager defaultManager] fileExistsAtPath:pathFromWWW]) {
+    return [NSURL fileURLWithPath:pathFromWWW];
   }
-  return pathUrl;
+  return nil;
 }
 
 @end

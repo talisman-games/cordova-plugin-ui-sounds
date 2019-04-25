@@ -5,18 +5,39 @@ function UISoundsPlugin() {
 }
 
 UISoundsPlugin.prototype.preloadSound = function(assetPath) {
-  exec(function() {}, function() {}, 'UISounds', 'preloadSound', [assetPath]);
+  return new Promise((resolve, reject) => {
+    exec(
+      result => resolve(result),
+      error => reject(error),
+      'UISounds',
+      'preloadSound',
+      [assetPath]
+    );
+  });
 };
 
 UISoundsPlugin.prototype.playSound = function(assetPath, volume) {
-  exec(function() {}, function() {}, 'UISounds', 'playSound', [
-    assetPath,
-    volume
-  ]);
+  return new Promise((resolve, reject) => {
+    exec(
+      result => resolve(result),
+      error => reject(error),
+      'UISounds',
+      'playSound',
+      [assetPath, volume]
+    );
+  });
 };
 
 UISoundsPlugin.prototype.unloadSound = function(assetPath) {
-  exec(function() {}, function() {}, 'UISounds', 'unloadSound', [assetPath]);
+  return new Promise((resolve, reject) => {
+    exec(
+      result => resolve(result),
+      error => reject(error),
+      'UISounds',
+      'unloadSound',
+      [assetPath]
+    );
+  });
 };
 
 var uiSoundsPlugin = new UISoundsPlugin();

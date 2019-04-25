@@ -39,7 +39,8 @@ Loads a sound asset so that it is already in memory when a subsequent `playSound
 
 In order to achieve low latency between UI events and audio feedback, it is good practice to call `preloadSound` for each of your app's sound effects during initialization.
 
-- **assetPath** (string) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
+- **assetPath** (`string`) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
+- **Return Value** (`Promise<string>`) - Promise containing an appropriate success or failure message. Resolves when the asset has finished loading.
 
 ### `playSound(assetPath, [volume])`
 
@@ -47,8 +48,9 @@ Plays a sound asset on the device's system audio channel.
 
 If the sound has not been loading yet using `preloadSound`, it will be loaded before playing.
 
-- **assetPath** (string) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
-- **volume** (double, optional) - Indicates the desired playback volume of this sound relative to other system sounds. This parameter is ignored on iOS (see [iOS Limitations](#ios-limitations)). It no value is given, this parameter will default to `1.0`.
+- **assetPath** (`string`) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
+- **volume** (`double`, optional) - Indicates the desired playback volume of this sound relative to other system sounds. This parameter is ignored on iOS (see [iOS Limitations](#ios-limitations)). It no value is given, this parameter will default to `1.0`.
+- **Return Value** (`Promise<string>`) - Promise containing an appropriate success or failure message. Resolves when the asset has started playback.
 
 ### `unloadSound(assetPath)`
 
@@ -56,7 +58,8 @@ Frees the resources associated with the given sound asset.
 
 If you no longer need a sound asset, it is good practice to free the resource using this method.
 
-- **assetPath** (string) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
+- **assetPath** (`string`) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
+- **Return Value** (`Promise<string>`) - Promise containing an appropriate success or failure message. Resolves when the asset has been unloaded.
 
 ## Limitations
 
@@ -88,9 +91,9 @@ Unlike iOS, programmatic volume control is available on Android (relative to the
 
 ## Alternatives
 
-HTML Audio
+[HTML Audio](https://developer.mozilla.org/en-US/docs/Web/API/HTMLAudioElement)
 
-cordova-plugin-nativeaudio
+[cordova-plugin-nativeaudio](https://github.com/floatinghotpot/cordova-plugin-nativeaudio)
 
 ## Contributing
 

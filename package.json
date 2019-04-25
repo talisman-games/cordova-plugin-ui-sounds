@@ -1,7 +1,7 @@
 {
   "name": "cordova-plugin-ui-sounds",
   "author": "talisman.games",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Cordova Plugin for simple audio feedback on mobile devices.",
   "cordova": {
     "id": "cordova-plugin-ui-sounds",

@@ -1,19 +1,15 @@
 package games.talisman.cordova.plugin.uisounds;
 
-import java.util.HashMap;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import android.content.res.AssetFileDescriptor;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.util.Log;
-
+import java.util.HashMap;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.PluginResult.Status;
+import org.json.JSONArray;
 
 public class UISounds extends CordovaPlugin {
   private static final String LOGTAG = "UISounds";
@@ -21,38 +17,39 @@ public class UISounds extends CordovaPlugin {
 
   @Override
   protected void pluginInitialize() {
+    Log.d(LOGTAG, "Native plugin initialized");
     loadedAssets = new HashMap<>();
   }
 
   @Override
-  public boolean execute(final String action, final JSONArray params, final CallbackContext callbackContext) {
-    PluginResult result = null;
-
+  public boolean execute(
+      final String action, final JSONArray params, final CallbackContext callbackContext) {
     try {
-      if (action.equals("preloadSound")) {
-        executeAsyncPluginAction(() -> executePreload(params), callbackContext);
-      } else if (action.equals("playSound")) {
-        executeAsyncPluginAction(() -> executePlay(params), callbackContext);
-      } else if (action.equals("unloadSound")) {
-        executeAsyncPluginAction(() -> executeUnload(params), callbackContext);
-      } else {
-        result = new PluginResult(Status.ERROR, "Unsupported plugin action");
+      switch (action) {
+        case "preloadSound":
+          executeAsyncPluginAction(() -> executePreload(params), callbackContext);
+          break;
+        case "playSound":
+          executeAsyncPluginAction(() -> executePlay(params), callbackContext);
+          break;
+        case "unloadSound":
+          executeAsyncPluginAction(() -> executeUnload(params), callbackContext);
+          break;
+        default:
+          return false;
       }
     } catch (Exception ex) {
-      result = new PluginResult(Status.ERROR, ex.toString());
+      callbackContext.sendPluginResult(
+          new PluginResult(Status.ERROR, "UISounds: Error - " + ex.toString()));
     }
 
-    if (result != null) {
-      callbackContext.sendPluginResult(result);
-    }
     return true;
   }
 
-  private interface PluginAction {
-    PluginResult execute();
-  }
+  private interface PluginAction { PluginResult execute(); }
 
-  private void executeAsyncPluginAction(PluginAction action, final CallbackContext callbackContext) {
+  private void executeAsyncPluginAction(
+      PluginAction action, final CallbackContext callbackContext) {
     cordova.getThreadPool().execute(() -> {
       final PluginResult result = action.execute();
       callbackContext.sendPluginResult(result);
@@ -60,36 +57,36 @@ public class UISounds extends CordovaPlugin {
   }
 
   private PluginResult createError(final String errorMsg) {
-    Log.e(LOGTAG, errorMsg);
     return new PluginResult(Status.ERROR, errorMsg);
   }
 
   private PluginResult executePreload(final JSONArray params) {
     final String assetPath = params.optString(0, null);
     if (assetPath == null) {
-      return createError("Invalid Argument: Expected assetPath (String) as first argument.");
+      return createError(
+          "UISounds: Expected assetPath (string) as first argument to preloadSound()");
     }
 
     if (loadedAssets.containsKey(assetPath)) {
-      return createError("Asset already preloaded: '" + assetPath + "'");
+      return createError("UISounds: '" + assetPath + "' is already loaded");
     }
 
     try {
       final String fullPath = "www/".concat(assetPath);
-      final AssetFileDescriptor afd = cordova.getActivity().getApplicationContext().getResources().getAssets()
-          .openFd(fullPath);
+      final AssetFileDescriptor afd =
+          cordova.getActivity().getApplicationContext().getResources().getAssets().openFd(fullPath);
       MediaPlayer mediaPlayer = new MediaPlayer();
       mediaPlayer.setAudioStreamType(AudioManager.STREAM_SYSTEM);
       mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
       mediaPlayer.prepare();
       afd.close();
       loadedAssets.put(assetPath, mediaPlayer);
-      Log.d(LOGTAG, "preloadSound('" + assetPath + "') - done");
     } catch (Exception e) {
-      return createError(e.getMessage());
+      return createError(
+          "UISounds: Error while attempting to load '" + assetPath + "' - " + e.toString());
     }
 
-    return new PluginResult(Status.OK);
+    return new PluginResult(Status.OK, "UISounds: '" + assetPath + "' loaded");
   }
 
   private PluginResult executePlay(final JSONArray params) {
@@ -97,15 +94,16 @@ public class UISounds extends CordovaPlugin {
     final double volume = params.optDouble(1, 1.0);
 
     if (assetPath == null) {
-      return createError("Invalid Argument: Expected assetPath (String) as first argument.");
+      return createError("UISounds: Expected assetPath (String) as first argument to playSound()");
     }
 
     if (volume < 0.0 || volume > 1.0) {
-      return createError("Invalid Argument: Volume must be >= 0.0 and <= 1.0");
+      return createError("UISounds: Volume must be >= 0.0 and <= 1.0");
     }
 
+    boolean hadToLoadAsset = false;
     if (!loadedAssets.containsKey(assetPath)) {
-      Log.w(LOGTAG, "You should call preloadSound() before calling playSound() for reduced latency");
+      hadToLoadAsset = true;
       final PluginResult result = executePreload(params);
       if (result.getStatus() != Status.OK.ordinal()) {
         return result;
@@ -114,7 +112,7 @@ public class UISounds extends CordovaPlugin {
 
     MediaPlayer player = loadedAssets.get(assetPath);
     if (player == null) {
-      return createError("null MediaPlayer for '" + assetPath + "'!");
+      return createError("UISounds: null MediaPlayer for '" + assetPath + "'!");
     }
 
     try {
@@ -125,20 +123,23 @@ public class UISounds extends CordovaPlugin {
       player.setVolume((float) volume, (float) volume);
       player.start();
     } catch (Exception e) {
-      return createError(e.getMessage());
+      return createError("UISounds: Error - " + e.toString());
     }
 
-    return new PluginResult(Status.OK);
+    final String message = hadToLoadAsset ? "UISounds: '" + assetPath
+            + "' loaded and playback started. Call preloadSound() first for lower-latency playback."
+                                          : "UISounds: '" + assetPath + "' playback started";
+    return new PluginResult(Status.OK, message);
   }
 
   private PluginResult executeUnload(final JSONArray params) {
     final String assetPath = params.optString(0, null);
     if (assetPath == null) {
-      return createError("Invalid Argument: Expected assetPath (String) as first argument.");
+      return createError("UISounds: Expected assetPath (String) as first argument to playSound()");
     }
 
     if (!loadedAssets.containsKey(assetPath)) {
-      return createError("Asset not found: '" + assetPath + "' is not currently loaded!");
+      return createError("UISounds: '" + assetPath + "' is not loaded, cannot be unloaded");
     }
 
     MediaPlayer player = loadedAssets.get(assetPath);
@@ -151,8 +152,6 @@ public class UISounds extends CordovaPlugin {
     }
     loadedAssets.remove(assetPath);
 
-    Log.d(LOGTAG, "unloadSound('" + assetPath + "') - done");
-    return new PluginResult(Status.OK);
+    return new PluginResult(Status.OK, "UISounds: '" + assetPath + "' unloaded");
   }
-
 }
