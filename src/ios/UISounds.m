@@ -38,6 +38,13 @@ static NSString *resultToString(OSStatus result) {
   }];
 }
 
+- (void)preloadMultiple:(CDVInvokedUrlCommand *)command {
+  [self.commandDelegate runInBackground:^{
+    CDVPluginResult *result = [self createMultipleSystemSounds:command.arguments];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+  }];
+}
+
 - (void)playSound:(CDVInvokedUrlCommand *)command {
   NSString *assetPath = [command.arguments objectAtIndex:0];
   [self.commandDelegate runInBackground:^{
@@ -92,6 +99,46 @@ static NSString *resultToString(OSStatus result) {
 
   [self addSystemSoundIdFor:assetPath withSoundId:soundId];
   NSString *message = [NSString stringWithFormat:@"UISounds: '%@' loaded", assetPath];
+  return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
+}
+
+- (NSString *)addAssetPath:(NSString *)assetPath toFailures:(NSString *)failures {
+  if (failures != nil) {
+    return [failures stringByAppendingFormat:@", '%@'", assetPath];
+  }
+  return [NSString stringWithFormat:@"UISounds: Failed to load assets - '%@'", assetPath];
+}
+
+- (CDVPluginResult *)createMultipleSystemSounds:(NSArray *)arrayOfAssetPaths {
+  NSEnumerator *enumerator = [arrayOfAssetPaths objectEnumerator];
+  NSString *assetPath = nil;
+  NSString *errorMessage = nil;
+  while (assetPath = [enumerator nextObject]) {
+    SystemSoundID soundId = [self getSystemSoundIdFor:assetPath];
+    if (soundId != INVALID_SOUND_ID) {
+      continue;  // already loaded
+    }
+
+    NSURL *assetUrl = [self findUrlFor:assetPath];
+    if (assetUrl == nil) {
+      errorMessage = [self addAssetPath:assetPath toFailures:errorMessage];
+      continue;
+    }
+
+    CFURLRef assetUrlRef = (CFURLRef)CFBridgingRetain(assetUrl);
+    OSStatus result = AudioServicesCreateSystemSoundID(assetUrlRef, &soundId);
+    if (result != kAudioServicesNoError) {
+      errorMessage = [self addAssetPath:assetPath toFailures:errorMessage];
+      continue;
+    }
+
+    [self addSystemSoundIdFor:assetPath withSoundId:soundId];
+  }
+
+  if (errorMessage != nil) {
+    return [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMessage];
+  }
+  NSString *message = @"UISounds: All assets loaded";
   return [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:message];
 }
 

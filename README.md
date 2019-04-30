@@ -19,9 +19,11 @@ cordova plugin add cordova-plugin-ui-sounds
 ## Usage
 
 ```javascript
-// During app initialization:
+// During app initialization, after deviceReady:
 var uiSounds = cordova.require('cordova-plugin-ui-sounds.Plugin');
-uiSounds.preloadSound('assets/myTapSound.mp3');
+uiSounds
+  .preloadSound('assets/myTapSound.mp3')
+  .catch(error => console.error(error));
 
 // During button press event:
 var myVolume = 1.0;
@@ -37,10 +39,19 @@ uiSounds.unloadSound('assets/myTapSound.mp3');
 
 Loads a sound asset so that it is already in memory when a subsequent `playSound` call is made.
 
-In order to achieve low latency between UI events and audio feedback, it is good practice to call `preloadSound` for each of your app's sound effects during initialization.
+In order to achieve low latency between UI events and audio feedback, it is good practice to call `preloadSound` for each of your app's sound effects after `deviceReady`.
 
 - **assetPath** (`string`) - Tells the operating system where to find the sound file. This must be a path relative to your project's `www` folder. It is case-sensitive.
 - **Return Value** (`Promise<string>`) - Promise containing an appropriate success or failure message. Resolves when the asset has finished loading.
+
+### `preloadMultiple(arrayOfAssetPaths)`
+
+Loads multiple sound assets at a time.
+
+In order to achieve low latency between UI events and audio feedback, it is good practice to pre-load all of your app's sound effects after `deviceReady`.
+
+- **arrayOfAssetPaths** (`string[]`) - Tells the operating system where to find each sound file. Each string in this array must be a path relative to your project's `www` folder. It is case-sensitive.
+- **Return Value** (`Promise<string>`) - Promise containing an appropriate success or failure message. Resolves when all assets have finished loading.
 
 ### `playSound(assetPath, [volume])`
 

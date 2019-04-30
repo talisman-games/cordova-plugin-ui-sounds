@@ -16,6 +16,18 @@ UISoundsPlugin.prototype.preloadSound = function(assetPath) {
   });
 };
 
+UISoundsPlugin.prototype.preloadMultiple = function(arrayOfAssetPaths) {
+  return new Promise((resolve, reject) => {
+    exec(
+      result => resolve(result),
+      error => reject(error),
+      'UISounds',
+      'preloadMultiple',
+      arrayOfAssetPaths
+    );
+  });
+};
+
 UISoundsPlugin.prototype.playSound = function(assetPath, volume) {
   return new Promise((resolve, reject) => {
     exec(

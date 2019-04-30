@@ -29,6 +29,9 @@ public class UISounds extends CordovaPlugin {
         case "preloadSound":
           executeAsyncPluginAction(() -> executePreload(params), callbackContext);
           break;
+        case "preloadMultiple":
+          executeAsyncPluginAction(() -> executePreloadMultiple(params), callbackContext);
+          break;
         case "playSound":
           executeAsyncPluginAction(() -> executePlay(params), callbackContext);
           break;
@@ -71,6 +74,48 @@ public class UISounds extends CordovaPlugin {
       return createError("UISounds: '" + assetPath + "' is already loaded");
     }
 
+    final String loadingError = loadAsset(assetPath);
+    if (loadingError != null) {
+      return createError(
+          "UISounds: Error while attempting to load '" + assetPath + "' - " + loadingError);
+    }
+
+    return new PluginResult(Status.OK, "UISounds: '" + assetPath + "' loaded");
+  }
+
+  private String addAssetPathToFailures(final String assetPath, final String failures) {
+    if (failures != null) {
+      return failures + ", '" + assetPath + "'";
+    }
+    return "UISounds: Failed to load assets - '" + assetPath + "'";
+  }
+
+  private PluginResult executePreloadMultiple(final JSONArray params) {
+    String errorMessage = null;
+    for (int i = 0; i < params.length(); i++) {
+      final String assetPath = params.optString(i, null);
+      if (assetPath == null) {
+        errorMessage = addAssetPathToFailures("invalid string", errorMessage);
+        continue;
+      }
+
+      if (loadedAssets.containsKey(assetPath)) {
+        continue; // already loaded
+      }
+
+      final String loadingError = loadAsset(assetPath);
+      if (loadingError != null) {
+        errorMessage = addAssetPathToFailures(assetPath, errorMessage);
+      }
+    }
+
+    if (errorMessage != null) {
+      return new PluginResult(Status.ERROR, errorMessage);
+    }
+    return new PluginResult(Status.OK, "UISounds: All assets loaded");
+  }
+
+  private String loadAsset(final String assetPath) {
     try {
       final String fullPath = "www/".concat(assetPath);
       final AssetFileDescriptor afd =
@@ -82,11 +127,9 @@ public class UISounds extends CordovaPlugin {
       afd.close();
       loadedAssets.put(assetPath, mediaPlayer);
     } catch (Exception e) {
-      return createError(
-          "UISounds: Error while attempting to load '" + assetPath + "' - " + e.toString());
+      return e.toString();
     }
-
-    return new PluginResult(Status.OK, "UISounds: '" + assetPath + "' loaded");
+    return null;
   }
 
   private PluginResult executePlay(final JSONArray params) {
