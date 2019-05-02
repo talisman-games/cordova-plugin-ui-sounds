@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The format of this file is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.2.1] - 2019-05-02
+## [1.2.2] - 2019-05-02
 
 ### Fixed
 
@@ -49,8 +49,8 @@ The format of this file is based on [Keep a Changelog](https://keepachangelog.co
 - First functional release of cordova-plugin-ui-sounds! See the [README](README.md)
   for full details.
 
-[unreleased]: https://github.com/talisman-games/cordova-plugin-ui-sounds/compare/1.2.1...HEAD
-[1.2.1]: https://github.com/talisman-games/cordova-plugin-ui-sounds/compare/1.2.0...1.2.1
+[unreleased]: https://github.com/talisman-games/cordova-plugin-ui-sounds/compare/1.2.2...HEAD
+[1.2.2]: https://github.com/talisman-games/cordova-plugin-ui-sounds/compare/1.2.0...1.2.2
 [1.2.0]: https://github.com/talisman-games/cordova-plugin-ui-sounds/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/talisman-games/cordova-plugin-ui-sounds/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/talisman-games/cordova-plugin-ui-sounds/releases/tag/1.0.0
