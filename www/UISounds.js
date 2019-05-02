@@ -5,7 +5,7 @@ function UISoundsPlugin() {
 }
 
 UISoundsPlugin.prototype.preloadSound = function(assetPath) {
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject) {
     exec(
       result => resolve(result),
       error => reject(error),
@@ -17,7 +17,7 @@ UISoundsPlugin.prototype.preloadSound = function(assetPath) {
 };
 
 UISoundsPlugin.prototype.preloadMultiple = function(arrayOfAssetPaths) {
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject) {
     exec(
       result => resolve(result),
       error => reject(error),
@@ -29,7 +29,7 @@ UISoundsPlugin.prototype.preloadMultiple = function(arrayOfAssetPaths) {
 };
 
 UISoundsPlugin.prototype.playSound = function(assetPath, volume) {
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject) {
     exec(
       result => resolve(result),
       error => reject(error),
@@ -41,7 +41,7 @@ UISoundsPlugin.prototype.playSound = function(assetPath, volume) {
 };
 
 UISoundsPlugin.prototype.unloadSound = function(assetPath) {
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject) {
     exec(
       result => resolve(result),
       error => reject(error),
